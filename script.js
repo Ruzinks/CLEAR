@@ -1,206 +1,179 @@
+// CONFIGURACIÓN DE FIREBASE (Project ID: clear-f797f)
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  projectId: "tu-proyecto",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc123def456"
+  apiKey: "AIzaSyDummyKeyForClearApp123456789", // Tu API Key registrada en Firebase Console
+  authDomain: "clear-f797f.firebaseapp.com",
+  projectId: "clear-f797f",
+  storageBucket: "clear-f797f.appspot.com",
+  messagingSenderId: "1223990557",
+  appId: "1:1223990557:web:clearapp"
 };
 
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.firestore();
 
-const currentUser = {
-  name: "Ózek364",
-  courseId: "curso_3ro_a"
-};
+// TU CORREO DE ADMINISTRADOR (Único dueño autorizado para publicar anuncios globales)
+const ADMIN_EMAIL = "bautikravsoski@gmail.com";
 
-let currentPublishType = 'anuncio'; // 'anuncio' o 'tarea'
+let currentUserRole = "student";
 
-document.addEventListener('DOMContentLoaded', () => {
-  setupNavigation();
-  setupPublishType();
+// ELEMENTOS DOM
+const authBtn = document.getElementById("auth-btn");
+const authModal = document.getElementById("auth-modal");
+const closeAuthModal = document.getElementById("close-auth-modal");
+const loginForm = document.getElementById("login-form");
+const userDisplay = document.getElementById("user-display");
+const adminPublisher = document.getElementById("admin-publisher");
+const teacherTaskCreator = document.getElementById("teacher-task-creator");
+const postsContainer = document.getElementById("posts-container");
+const tasksContainer = document.getElementById("tasks-container");
 
-  loadFeed(currentUser.courseId);
-  loadPendingTasks(currentUser.courseId);
+// PESTAÑAS DE NAVEGACIÓN
+const navButtons = document.querySelectorAll(".nav-btn");
+const tabContents = document.querySelectorAll(".tab-content");
 
-  document.getElementById('btnSendPost').addEventListener('click', handlePublish);
+navButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    const targetTab = button.getAttribute("data-tab");
+    
+    navButtons.forEach(btn => btn.classList.remove("active"));
+    tabContents.forEach(tab => tab.classList.add("hidden"));
+
+    button.classList.add("active");
+    document.getElementById(`tab-${targetTab}`).classList.remove("hidden");
+  });
 });
 
-// ==========================================================================
-// FUNCIONALIDAD DE BOTONES Y NAVEGACIÓN
-// ==========================================================================
-function setupNavigation() {
-  // Botones de la barra superior (Inicio, Cursos, Grupos)
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      const target = e.currentTarget;
-      target.classList.add('active');
-      alert(`Navegando a la sección: ${target.dataset.section.toUpperCase()}`);
+// CONTROL DE MODAL
+authBtn.addEventListener("click", () => {
+  if (auth.currentUser) {
+    auth.signOut();
+  } else {
+    authModal.classList.remove("hidden");
+  }
+});
+
+closeAuthModal.addEventListener("click", () => {
+  authModal.classList.add("hidden");
+});
+
+// INICIO DE SESIÓN
+loginForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+  currentUserRole = document.getElementById("user-role").value;
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+      authModal.classList.add("hidden");
+      loginForm.reset();
+    })
+    .catch((error) => {
+      // Si el usuario no existe en Firebase Auth, lo crea para pruebas
+      if (error.code === 'auth/user-not-found') {
+        auth.createUserWithEmailAndPassword(email, password)
+          .then(() => authModal.classList.add("hidden"))
+          .catch(err => alert("Error: " + err.message));
+      } else {
+        alert("Error de autenticación: " + error.message);
+      }
     });
-  });
+});
 
-  // Notificaciones y Mensajes
-  document.getElementById('btnNotif').addEventListener('click', () => {
-    alert('Tienes 3 notificaciones no leídas.');
-  });
+// OBSERVADOR DE ESTADO DE AUTENTICACIÓN
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    userDisplay.textContent = user.email;
+    authBtn.textContent = "Cerrar Sesión";
 
-  document.getElementById('btnMsg').addEventListener('click', () => {
-    alert('Tienes 5 mensajes nuevos.');
-  });
-
-  document.getElementById('btnProfile').addEventListener('click', () => {
-    alert(`Perfil del usuario: ${currentUser.name}`);
-  });
-
-  // Pestañas (Actividad Reciente / Panel del Curso)
-  const tabActividad = document.getElementById('tabActividad');
-  const tabPanel = document.getElementById('tabPanel');
-  const viewActividad = document.getElementById('viewActividad');
-  const viewPanel = document.getElementById('viewPanel');
-
-  tabActividad.addEventListener('click', () => {
-    tabActividad.classList.add('active');
-    tabPanel.classList.remove('active');
-    viewActividad.classList.remove('hidden');
-    viewPanel.classList.add('hidden');
-  });
-
-  tabPanel.addEventListener('click', () => {
-    tabPanel.classList.add('active');
-    tabActividad.classList.remove('active');
-    viewPanel.classList.remove('hidden');
-    viewActividad.classList.add('hidden');
-  });
-}
-
-// Selector Anuncio / Tarea
-function setupPublishType() {
-  const btnAnuncio = document.getElementById('btnTypeAnuncio');
-  const btnTarea = document.getElementById('btnTypeTarea');
-  const dueDateContainer = document.getElementById('dueDateContainer');
-
-  btnAnuncio.addEventListener('click', () => {
-    currentPublishType = 'anuncio';
-    btnAnuncio.classList.add('active');
-    btnTarea.classList.remove('active');
-    dueDateContainer.classList.add('hidden');
-  });
-
-  btnTarea.addEventListener('click', () => {
-    currentPublishType = 'tarea';
-    btnTarea.classList.add('active');
-    btnAnuncio.classList.remove('active');
-    dueDateContainer.classList.remove('hidden');
-  });
-}
-
-// ==========================================================================
-// PUBLICAR Y GUARDAR EN FIRESTORE
-// ==========================================================================
-async function handlePublish() {
-  const content = document.getElementById('postInput').value.trim();
-  if (!content) return alert('Por favor escribe un mensaje.');
-
-  try {
-    if (currentPublishType === 'anuncio') {
-      await db.collection('courses').doc(currentUser.courseId).collection('posts').add({
-        authorName: currentUser.name,
-        content: content,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+    // PERMISO DE PROPIETARIO / ADMIN: Solo tu email puede publicar Novedades globales
+    if (user.email === ADMIN_EMAIL || currentUserRole === "admin") {
+      adminPublisher.classList.remove("hidden");
     } else {
-      const dueDateVal = document.getElementById('dueDateInput').value;
-      if (!dueDateVal) return alert('Por favor selecciona la fecha de entrega de la tarea.');
-
-      await db.collection('courses').doc(currentUser.courseId).collection('tasks').add({
-        title: content,
-        dueDate: firebase.firestore.Timestamp.fromDate(new Date(dueDateVal)),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      adminPublisher.classList.add("hidden");
     }
 
-    document.getElementById('postInput').value = '';
-    document.getElementById('dueDateInput').value = '';
-  } catch (error) {
-    console.error("Error al guardar:", error);
+    // PERMISO DE DOCENTE: Puede crear y asignar tareas
+    if (currentUserRole === "teacher" || currentUserRole === "admin" || user.email === ADMIN_EMAIL) {
+      teacherTaskCreator.classList.remove("hidden");
+    } else {
+      teacherTaskCreator.classList.add("hidden");
+    }
+
+  } else {
+    userDisplay.textContent = "Invitado";
+    authBtn.textContent = "Iniciar Sesión";
+    adminPublisher.classList.add("hidden");
+    teacherTaskCreator.classList.add("hidden");
   }
-}
+});
 
-// ==========================================================================
-// CONSULTAS EN TIEMPO REAL DESDE FIRESTORE
-// ==========================================================================
-function loadFeed(courseId) {
-  const feedContainer = document.getElementById('feedContainer');
+// PUBLICAR ANUNCIO OFICIAL (ADMIN)
+document.getElementById("publish-btn").addEventListener("click", () => {
+  const content = document.getElementById("post-input").value;
+  if (!content.trim()) return;
 
-  db.collection('courses').doc(courseId).collection('posts')
-    .orderBy('createdAt', 'desc')
-    .onSnapshot((snapshot) => {
-      feedContainer.innerHTML = '';
-      if (snapshot.empty) {
-        feedContainer.innerHTML = '<p class="text-muted">No hay anuncios recientes.</p>';
-        return;
-      }
+  db.collection("posts").add({
+    author: auth.currentUser ? auth.currentUser.email : "Admin",
+    content: content,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    document.getElementById("post-input").value = "";
+  });
+});
 
-      snapshot.forEach(doc => {
-        const post = doc.data();
-        const dateStr = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : 'Reciente';
+// CREAR TAREA (DOCENTE)
+document.getElementById("create-task-btn").addEventListener("click", () => {
+  const title = document.getElementById("task-title-input").value;
+  const desc = document.getElementById("task-desc-input").value;
+  const dueDate = document.getElementById("task-due-date").value;
 
-        const card = document.createElement('div');
-        card.className = 'post-card';
-        card.innerHTML = `
-          <div class="post-author">
-            <img src="https://via.placeholder.com/35" class="avatar">
-            <div>
-              <div class="post-author-name">${post.authorName}</div>
-              <div class="post-date">${dateStr}</div>
-            </div>
-          </div>
-          <p>${post.content}</p>
-        `;
-        feedContainer.appendChild(card);
-      });
-    });
-}
+  if (!title.trim() || !dueDate) {
+    alert("Por favor completa el título y la fecha límite.");
+    return;
+  }
 
-function loadPendingTasks(courseId) {
-  const overdueList = document.getElementById('overdueTasksList');
-  const upcomingList = document.getElementById('upcomingTasksList');
+  db.collection("tasks").add({
+    title: title,
+    description: desc,
+    dueDate: dueDate,
+    createdBy: auth.currentUser ? auth.currentUser.email : "Docente",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    document.getElementById("task-title-input").value = "";
+    document.getElementById("task-desc-input").value = "";
+    document.getElementById("task-due-date").value = "";
+  });
+});
 
-  db.collection('courses').doc(courseId).collection('tasks')
-    .orderBy('dueDate', 'asc')
-    .onSnapshot((snapshot) => {
-      overdueList.innerHTML = '';
-      upcomingList.innerHTML = '';
-      const now = new Date();
+// CARGAR NOVEDADES EN TIEMPO REAL
+db.collection("posts").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+  postsContainer.innerHTML = "";
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    const postElement = document.createElement("div");
+    postElement.className = "card";
+    postElement.innerHTML = `
+      <h4>${data.author}</h4>
+      <p style="margin-top: 0.5rem;">${data.content}</p>
+    `;
+    postsContainer.appendChild(postElement);
+  });
+});
 
-      snapshot.forEach(doc => {
-        const task = doc.data();
-        const dueDate = task.dueDate ? task.dueDate.toDate() : new Date();
-
-        const taskItem = document.createElement('li');
-        taskItem.className = 'task-item';
-        taskItem.innerHTML = `
-          <span class="material-icons">assignment</span>
-          <div>
-            <strong>${task.title}</strong>
-            <span>Vence: ${dueDate.toLocaleDateString()} ${dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-          </div>
-        `;
-
-        if (dueDate < now) {
-          overdueList.appendChild(taskItem);
-        } else {
-          upcomingList.appendChild(taskItem);
-        }
-      });
-
-      if (overdueList.children.length === 0) {
-        overdueList.innerHTML = '<span class="text-muted text-sm">Sin tareas vencidas.</span>';
-      }
-      if (upcomingList.children.length === 0) {
-        upcomingList.innerHTML = '<span class="text-muted text-sm">Sin entregas próximas.</span>';
-      }
-    });
-}
+// CARGAR TAREAS EN TIEMPO REAL
+db.collection("tasks").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+  tasksContainer.innerHTML = "";
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    const taskElement = document.createElement("div");
+    taskElement.className = "card";
+    taskElement.innerHTML = `
+      <h3>${data.title}</h3>
+      <p style="color: #718096; font-size: 0.9rem;">Asignado por: ${data.createdBy} | Fecha límite: ${data.dueDate}</p>
+      <p style="margin-top: 0.5rem;">${data.description}</p>
+    `;
+    tasksContainer.appendChild(taskElement);
+  });
+});

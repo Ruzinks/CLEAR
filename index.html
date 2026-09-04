@@ -3,118 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CLEAR - Portal Educativo</title>
+  <title>CLEAR - Plataforma Educativa</title>
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+  <!-- NAVEGACIÓN SUPERIOR -->
   <header class="navbar">
-    <div class="nav-left">
-      <span class="logo">CLEAR</span>
-      <nav class="main-nav">
-        <button class="nav-btn active" data-section="inicio">
-          <span class="material-icons">home</span> Inicio
-        </button>
-        <button class="nav-btn" data-section="cursos">
-          <span class="material-icons">school</span> Cursos
-        </button>
-        <button class="nav-btn" data-section="grupos">
-          <span class="material-icons">groups</span> Grupos
-        </button>
-      </nav>
+    <div class="logo">
+      <h1>CLEAR</h1>
     </div>
-
-    <div class="nav-right">
-      <button class="icon-btn" id="btnNotif" title="Notificaciones">
-        <span class="material-icons">notifications</span>
-        <span class="badge" id="notifBadge">3</span>
-      </button>
-      <button class="icon-btn" id="btnMsg" title="Mensajes">
-        <span class="material-icons">mail</span>
-        <span class="badge" id="msgBadge">5</span>
-      </button>
-      
-      <div class="user-profile" id="btnProfile">
-        <img src="https://via.placeholder.com/35" alt="Avatar" class="avatar">
-        <span id="navUserName">Ózek364</span>
-      </div>
+    <nav>
+      <button class="nav-btn active" data-tab="feed">Novedades</button>
+      <button class="nav-btn" data-tab="tasks">Tareas</button>
+      <button class="nav-btn" data-tab="courses">Mis Cursos</button>
+    </nav>
+    <div class="auth-status">
+      <span id="user-display">Invitado</span>
+      <button id="auth-btn" class="btn-primary">Iniciar Sesión</button>
     </div>
   </header>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <div class="main-container">
-    
-    <!-- COLUMNA PRINCIPAL: NOVEDADES / CONTENIDO -->
-    <main class="feed-section">
-      
-      <!-- Pestañas de navegación de actividad -->
-      <div class="tabs-bar">
-        <button class="tab-btn active" id="tabActividad">ACTIVIDAD RECIENTE</button>
-        <button class="tab-btn" id="tabPanel">PANEL DEL CURSO</button>
-      </div>
+  <main class="container">
 
-      <!-- VISTA: ACTIVIDAD RECIENTE (MOSTRADA POR DEFECTO) -->
-      <div id="viewActividad" class="tab-content active">
-        <!-- Publicador sin campo de imagen -->
-        <div class="publish-box">
-          <div class="publish-header">
-            <span>Publicar:</span>
-            <button class="btn-type active" id="btnTypeAnuncio">Anuncio</button>
-            <button class="btn-type" id="btnTypeTarea">Tarea</button>
+    <!-- MODAL DE AUTENTICACIÓN -->
+    <div id="auth-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-btn" id="close-auth-modal">&times;</span>
+        <h2 id="modal-title">Acceder a CLEAR</h2>
+        <form id="login-form">
+          <input type="email" id="login-email" placeholder="Correo electrónico" required>
+          <input type="password" id="login-password" placeholder="Contraseña" required>
+          <div class="role-selector">
+            <label for="user-role">Ingresar como:</label>
+            <select id="user-role">
+              <option value="student">Estudiante</option>
+              <option value="teacher">Docente</option>
+              <option value="admin">Administrador</option>
+            </select>
           </div>
-          
-          <textarea id="postInput" placeholder="Escribe una novedad o anuncio para la clase..."></textarea>
-          
-          <!-- Campo dinámico de fecha para cuando el tipo seleccionado es Tarea -->
-          <div id="dueDateContainer" class="due-date-box hidden">
-            <label for="dueDateInput">Fecha de entrega:</label>
-            <input type="datetime-local" id="dueDateInput">
-          </div>
+          <button type="submit" class="btn-primary full-width">Entrar</button>
+        </form>
+      </div>
+    </div>
 
-          <div class="publish-footer">
-            <button id="btnSendPost" class="btn-primary">Publicar</button>
-          </div>
-        </div>
+    <!-- PESTAÑA: FEED / NOVEDADES -->
+    <section id="tab-feed" class="tab-content active">
+      <!-- CREADOR DE PUBLICACIONES (SOLO PROPIETARIO / ADMIN) -->
+      <div id="admin-publisher" class="card publisher-card hidden">
+        <h3>Publicar Novedad Oficial</h3>
+        <textarea id="post-input" placeholder="Escribe un anuncio o novedad para la plataforma..."></textarea>
+        <button id="publish-btn" class="btn-primary">Publicar Anuncio</button>
+      </div>
 
-        <!-- Muro de Novedades -->
-        <div id="feedContainer" class="feed-container">
-          <!-- Publicaciones en tiempo real -->
+      <div class="feed-header">
+        <h2>Últimas Novedades</h2>
+      </div>
+      <div id="posts-container" class="posts-list">
+        <!-- Publicaciones dinámicas desde Firestore -->
+      </div>
+    </section>
+
+    <!-- PESTAÑA: TAREAS -->
+    <section id="tab-tasks" class="tab-content hidden">
+      <!-- FORMULARIO CREAR TAREA (DOCENTES Y ADMINS) -->
+      <div id="teacher-task-creator" class="card publisher-card hidden">
+        <h3>Asignar Nueva Tarea</h3>
+        <input type="text" id="task-title-input" placeholder="Título de la tarea" required>
+        <textarea id="task-desc-input" placeholder="Descripción de las instrucciones..."></textarea>
+        <div class="form-row">
+          <input type="date" id="task-due-date" required>
+          <button id="create-task-btn" class="btn-primary">Asignar Tarea</button>
         </div>
       </div>
 
-      <!-- VISTA: PANEL DEL CURSO -->
-      <div id="viewPanel" class="tab-content hidden">
-        <div class="panel-card">
-          <h2>Información del Curso</h2>
-          <p>Bienvenido al panel general de recursos, temarios y material didáctico del curso.</p>
+      <div class="feed-header">
+        <h2>Tareas Pendientes</h2>
+      </div>
+      <div id="tasks-container" class="tasks-list">
+        <!-- Tareas dinámicas desde Firestore -->
+      </div>
+    </section>
+
+    <!-- PESTAÑA: CURSOS -->
+    <section id="tab-courses" class="tab-content hidden">
+      <h2>Mis Cursos</h2>
+      <div class="courses-grid">
+        <div class="card course-card">
+          <h3>Informática y Programación</h3>
+          <p>Módulo de arquitectura serverless y desarrollo web.</p>
+          <span class="badge">Activo</span>
+        </div>
+        <div class="card course-card">
+          <h3>Sistemas de Bases de Datos</h3>
+          <p>Gestión con Firestore y reglas de seguridad.</p>
+          <span class="badge">Activo</span>
         </div>
       </div>
+    </section>
 
-    </main>
+  </main>
 
-    <!-- COLUMNA DERECHA: SOLO TAREAS PENDIENTES -->
-    <aside class="sidebar-section">
-      <div class="widget-box">
-        <h3 class="widget-title">Pendientes</h3>
-        
-        <div class="task-group">
-          <span class="group-title text-danger">VENCIDO</span>
-          <ul id="overdueTasksList" class="task-list"></ul>
-        </div>
-
-        <div class="task-group">
-          <span class="group-title text-warning">PRÓXIMO</span>
-          <ul id="upcomingTasksList" class="task-list"></ul>
-        </div>
-      </div>
-    </aside>
-  </div>
-
-  <!-- FIREBASE SDK v10 (COMPAT) -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- FIREBASE SDKs (v9 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
