@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLEAR - Portal Educativo</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+  <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
+  <header class="navbar">
+    <div class="nav-left">
+      <span class="logo">CLEAR</span>
+      <nav class="main-nav">
+        <button class="nav-btn active" data-section="inicio">
+          <span class="material-icons">home</span> Inicio
+        </button>
+        <button class="nav-btn" data-section="cursos">
+          <span class="material-icons">school</span> Cursos
+        </button>
+        <button class="nav-btn" data-section="grupos">
+          <span class="material-icons">groups</span> Grupos
+        </button>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      <button class="icon-btn" id="btnNotif" title="Notificaciones">
+        <span class="material-icons">notifications</span>
+        <span class="badge" id="notifBadge">3</span>
+      </button>
+      <button class="icon-btn" id="btnMsg" title="Mensajes">
+        <span class="material-icons">mail</span>
+        <span class="badge" id="msgBadge">5</span>
+      </button>
+      
+      <div class="user-profile" id="btnProfile">
+        <img src="https://via.placeholder.com/35" alt="Avatar" class="avatar">
+        <span id="navUserName">Ózek364</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="main-container">
+    
+    <!-- COLUMNA PRINCIPAL: NOVEDADES / CONTENIDO -->
+    <main class="feed-section">
+      
+      <!-- Pestañas de navegación de actividad -->
+      <div class="tabs-bar">
+        <button class="tab-btn active" id="tabActividad">ACTIVIDAD RECIENTE</button>
+        <button class="tab-btn" id="tabPanel">PANEL DEL CURSO</button>
+      </div>
+
+      <!-- VISTA: ACTIVIDAD RECIENTE (MOSTRADA POR DEFECTO) -->
+      <div id="viewActividad" class="tab-content active">
+        <!-- Publicador sin campo de imagen -->
+        <div class="publish-box">
+          <div class="publish-header">
+            <span>Publicar:</span>
+            <button class="btn-type active" id="btnTypeAnuncio">Anuncio</button>
+            <button class="btn-type" id="btnTypeTarea">Tarea</button>
+          </div>
+          
+          <textarea id="postInput" placeholder="Escribe una novedad o anuncio para la clase..."></textarea>
+          
+          <!-- Campo dinámico de fecha para cuando el tipo seleccionado es Tarea -->
+          <div id="dueDateContainer" class="due-date-box hidden">
+            <label for="dueDateInput">Fecha de entrega:</label>
+            <input type="datetime-local" id="dueDateInput">
+          </div>
+
+          <div class="publish-footer">
+            <button id="btnSendPost" class="btn-primary">Publicar</button>
+          </div>
+        </div>
+
+        <!-- Muro de Novedades -->
+        <div id="feedContainer" class="feed-container">
+          <!-- Publicaciones en tiempo real -->
+        </div>
+      </div>
+
+      <!-- VISTA: PANEL DEL CURSO -->
+      <div id="viewPanel" class="tab-content hidden">
+        <div class="panel-card">
+          <h2>Información del Curso</h2>
+          <p>Bienvenido al panel general de recursos, temarios y material didáctico del curso.</p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- COLUMNA DERECHA: SOLO TAREAS PENDIENTES -->
+    <aside class="sidebar-section">
+      <div class="widget-box">
+        <h3 class="widget-title">Pendientes</h3>
+        
+        <div class="task-group">
+          <span class="group-title text-danger">VENCIDO</span>
+          <ul id="overdueTasksList" class="task-list"></ul>
+        </div>
+
+        <div class="task-group">
+          <span class="group-title text-warning">PRÓXIMO</span>
+          <ul id="upcomingTasksList" class="task-list"></ul>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- FIREBASE SDK v10 (COMPAT) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
